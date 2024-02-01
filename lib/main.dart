@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 
 void main() {
   runApp(
-    const MaterialApp(
+     MaterialApp(
+      theme: ThemeData(
+        brightness: Brightness.dark
+      ),
       home: CalculatorApp(),
     )
   );
