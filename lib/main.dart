@@ -7,6 +7,7 @@ void main() {
       theme: ThemeData(
         brightness: Brightness.dark
       ),
+      debugShowCheckedModeBanner: false,
       home: CalculatorApp(),
     )
   );

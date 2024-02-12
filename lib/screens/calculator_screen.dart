@@ -1,6 +1,4 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'dart:math';
 import '../model/calc_model.dart';
 
@@ -16,14 +14,23 @@ class _CalculatorAppState extends State<CalculatorApp> {
    List<String> assemble = [];
    List<String> stack = [];
    bool isAfter = false;
+    String finalResult = '';
+
+    final TextEditingController _textController = TextEditingController();
 
    int index = -1;
-   int index1 = -1;
-   late double result;
-   late double num1;
-   late double num2;
    late String currentOperator = '';
+   int cursorPosition = 0;
 
+
+
+
+   @override
+  void dispose() {
+    // TODO: implement dispose
+     _textController.dispose();
+    super.dispose();
+  }
 
 
   @override
@@ -33,15 +40,34 @@ class _CalculatorAppState extends State<CalculatorApp> {
         padding: const EdgeInsets.all(18.0),
         child: Column(
           children:[
-            Container(
-              alignment: Alignment.topRight,
-              height: 100,
-              child: Text(display,
-              style: const TextStyle(
-                fontSize: 23,
+            Padding(
+              padding: const EdgeInsets.only(top: 20.0,),
+              child: Container(
+                alignment: Alignment.topRight,
+                height: 110,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        readOnly: true,
+                        cursorColor: Colors.red,
+                        showCursor: true,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          border: InputBorder.none
+                        ),
+                       controller: _textController,
+                      )
+                    ),
+                    const SizedBox(height: 36.0,),
+                    Text(finalResult,
+                      style: const TextStyle(
+                          fontSize: 26.0,
 
-              ),
-                textAlign: TextAlign.right,
+                      ),),
+                  ],
+                )
               ),
             ),
             Expanded(
@@ -71,51 +97,87 @@ class _CalculatorAppState extends State<CalculatorApp> {
           borderRadius: BorderRadius.all(Radius.circular(50.0))
       ),
       child: InkWell(
-        child: Center(child: Text(calculate.numbers)),
+        child: Center(child: Text(calculate.numbers,
+          style: const TextStyle(
+              fontSize: 20.0
+          ),)),
             onTap: () {
          setState(() {
            if (calculate.numbers != 'C'
            && !isOperator(calculate.numbers)
                && calculate.numbers != '='
-               && calculate.numbers != '+/-'
+               && calculate.numbers != 'DEL'
+           && calculate.numbers != '()'
            ) {
              index++;
-             print(index);
              assemble.add(calculate.numbers);
              display += assemble[index];
-             print('you suck man');
            } else if (isOperator(calculate.numbers)) {
-             // index1++;
-             // stack.add(calculate.numbers);
-             // display += stack[index1];
-             // print(stack);
-             // currentOperator = calculate.numbers;
-             index++;
-             print(index);
+              index++;
              assemble.add(calculate.numbers);
              display += assemble[index];
-           } else if (calculate.numbers == '=') {
+
+             if (finalResult != '') {
+               assemble =[finalResult];
+               display = finalResult;
+               finalResult = '';
+               assemble.add(calculate.numbers);
+               display += assemble[index];
+
+
+             }
+
+           }  else if (calculate.numbers == '=') {
+
              final expression = assemble.join('');
-             print(expression);
              final result = evaluateExpression(expression);
              if (result != null) {
                assemble = [result.toString()];
-               print(assemble);
-               display = result.toString();
-               print(display);
+               finalResult = result.toString();
                index = 0;
-             } else if (calculate.numbers == 'C') {
-               display = '';
              }
              else {
-               display = 'Error';
+               display = 'Invalid format';
                assemble = [];
                index = -1;
              }
+           } else if (calculate.numbers == 'C') {
+             display = '';
+             finalResult = '';
+             assemble = [];
+             index = -1;
+            } else if ( calculate.numbers == "()" && getCursorPosition(_textController) == 0) {
+             index++;
+             assemble.add('(');
+             display += assemble[index];
+           } else if (calculate.numbers == "()" && getCursorPosition(_textController) != 0){
+             if (assemble.last == 'x' ||
+                 assemble.last == '/' ||
+                 assemble.last == '+' ||
+             assemble.last == '-' ||
+             assemble.last == '%' ) {
+               index++;
+               assemble.add('(');
+               display += assemble[index];
+             } else {
+               index++;
+               assemble.add(')');
+               display += assemble[index];
+
+             }
            }
-           else {
-             print('you rock');
+
+           else if (calculate.numbers == 'DEL') {
+             assemble.removeAt(assemble.length - 1);
+             index--;
+             display = assemble.join('');
+
            }
+
+
+           _textController.text = display;
+
+
          });
     },
       ),
@@ -137,13 +199,37 @@ class _CalculatorAppState extends State<CalculatorApp> {
      }
    }
 
+
    static num _performOperation(String expression) {
-     final parts = expression.split(RegExp(r'(\+|\-|x|\/|\%)'));
+          expression = expression.replaceAll('x', '*');
+
+
+     while (expression.contains('(')) {
+       final startBracketIndex = expression.lastIndexOf('(');
+       final endBracketIndex = expression.indexOf(')', startBracketIndex);
+
+       if (endBracketIndex == -1) {
+         return double.nan;
+       }
+
+       final innerExpression = expression.substring(startBracketIndex + 1, endBracketIndex);
+       final innerResult = _performOperation(innerExpression);
+
+       if (innerResult.isNaN) {
+         return double.nan;
+       }
+
+       expression = expression.replaceRange(startBracketIndex, endBracketIndex + 1, innerResult.toString());
+     }
+
+     final parts = expression.split(RegExp(r'(\+|\-|\*|\/|\%)'));
      final operators = expression.split(RegExp(r'[0-9.]')).where((element) => element.isNotEmpty).toList();
      num result = num.parse(parts.first);
+
      for (int i = 0; i < operators.length; i++) {
        final num nextNumber = num.parse(parts[i + 1]);
        final op = operators[i];
+
        switch (op) {
          case '+':
            result += nextNumber;
@@ -151,7 +237,7 @@ class _CalculatorAppState extends State<CalculatorApp> {
          case '-':
            result -= nextNumber;
            break;
-         case 'x':
+         case '*':
            result *= nextNumber;
            break;
          case '/':
@@ -162,14 +248,23 @@ class _CalculatorAppState extends State<CalculatorApp> {
            break;
        }
      }
+
      return result;
    }
+   
+
    bool isOperator(String value) {
     return value == '+' ||
         value  == '-' ||
         value == 'x' ||
         value == '/' ||
      value == '%';
+   }
+
+   int getCursorPosition(TextEditingController controller) {
+     // Get the current cursor position
+     final int cursorPosition = controller.selection.baseOffset;
+     return cursorPosition;
    }
 
 }

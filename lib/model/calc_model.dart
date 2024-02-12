@@ -20,7 +20,7 @@ class Calc {
     Calc('2'),
     Calc('3'),
     Calc('+'),
-    Calc('+/-'),
+    Calc('DEL'),
     Calc('0'),
     Calc('.'),
     Calc('=')
