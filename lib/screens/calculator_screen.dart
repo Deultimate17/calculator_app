@@ -128,50 +128,20 @@ class _CalculatorAppState extends State<CalculatorApp> {
              }
 
            }  else if (calculate.numbers == '=') {
+             equalTo();
 
-             final expression = assemble.join('');
-             final result = evaluateExpression(expression);
-             if (result != null) {
-               assemble = [result.toString()];
-               finalResult = result.toString();
-               index = 0;
-             }
-             else {
-               display = 'Invalid format';
-               assemble = [];
-               index = -1;
-             }
            } else if (calculate.numbers == 'C') {
-             display = '';
-             finalResult = '';
-             assemble = [];
-             index = -1;
+             allClear();
             } else if ( calculate.numbers == "()" && getCursorPosition(_textController) == 0) {
              index++;
              assemble.add('(');
              display += assemble[index];
            } else if (calculate.numbers == "()" && getCursorPosition(_textController) != 0){
-             if (assemble.last == 'x' ||
-                 assemble.last == '/' ||
-                 assemble.last == '+' ||
-             assemble.last == '-' ||
-             assemble.last == '%' ) {
-               index++;
-               assemble.add('(');
-               display += assemble[index];
-             } else {
-               index++;
-               assemble.add(')');
-               display += assemble[index];
-
-             }
+             bracket();
            }
 
            else if (calculate.numbers == 'DEL') {
-             assemble.removeAt(assemble.length - 1);
-             index--;
-             display = assemble.join('');
-
+             delete();
            }
 
 
@@ -183,6 +153,7 @@ class _CalculatorAppState extends State<CalculatorApp> {
       ),
     );
   }
+
 
 
    num? evaluateExpression(String expression) {
@@ -251,7 +222,48 @@ class _CalculatorAppState extends State<CalculatorApp> {
 
      return result;
    }
-   
+
+   void delete() {
+     assemble.removeAt(assemble.length - 1);
+     index--;
+     display = assemble.join('');
+
+   }
+
+   void bracket() {
+     if (assemble.last == 'x' || assemble.last == '/' || assemble.last == '+' || assemble.last == '-' || assemble.last == '%' ) {
+       index++;
+       assemble.add('(');
+       display += assemble[index];
+     } else {
+       index++;
+       assemble.add(')');
+       display += assemble[index];
+
+     }
+   }
+
+   void allClear(){
+     display = '';
+     finalResult = '';
+     assemble = [];
+     index = -1;
+   }
+
+   void equalTo() {
+     final expression = assemble.join('');
+     final result = evaluateExpression(expression);
+     if (result != null) {
+       assemble = [result.toString()];
+       finalResult = result.toString();
+       index = 0;
+     }
+     else {
+       display = 'Invalid format';
+       assemble = [];
+       index = -1;
+     }
+   }
 
    bool isOperator(String value) {
     return value == '+' ||
